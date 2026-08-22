@@ -37,6 +37,18 @@ export default function App() {
     if (useCustomUrl && customWsUrl.trim()) {
       let base = customWsUrl.trim();
       if (base.endsWith('/')) base = base.slice(0, -1);
+
+      // Auto-convert http(s) to ws(s)
+      if (base.startsWith('https://')) {
+        base = base.replace('https://', 'wss://');
+      } else if (base.startsWith('http://')) {
+        base = base.replace('http://', 'ws://');
+      } else if (!base.startsWith('ws://') && !base.startsWith('wss://')) {
+        // If no scheme provided, default to wss:// for remote or ws:// for localhost
+        const autoScheme = (base.includes('localhost') || base.includes('127.0.0.1')) ? 'ws://' : 'wss://';
+        base = `${autoScheme}${base}`;
+      }
+
       return base.includes('/ws/') ? base : `${base}/ws/${encodeURIComponent(clientId.trim())}`;
     }
     const portPart = port ? `:${port}` : '';
