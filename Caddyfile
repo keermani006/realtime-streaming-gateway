@@ -1,0 +1,34 @@
+# Caddy configuration for automatic HTTPS / WSS
+# Replace {$DOMAIN:localhost} with your domain or IP when deploying on a VPS.
+
+{$DOMAIN:localhost} {
+    # WebSocket & REST API proxy to FastAPI
+    handle /ws/* {
+        reverse_proxy api:8000
+    }
+
+    handle /events* {
+        reverse_proxy api:8000
+    }
+
+    handle /health {
+        reverse_proxy api:8000
+    }
+
+    handle /stats {
+        reverse_proxy api:8000
+    }
+
+    handle /docs* {
+        reverse_proxy api:8000
+    }
+
+    handle /openapi.json {
+        reverse_proxy api:8000
+    }
+
+    # Frontend Single Page App fallback
+    handle {
+        reverse_proxy frontend:80
+    }
+}

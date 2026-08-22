@@ -1,0 +1,61 @@
+# Render Blueprint Specification
+# Deploys PostgreSQL + Redis + FastAPI WebSocket Gateway + React Frontend
+services:
+  # 1. FastAPI Real-Time Gateway Web Service
+  - type: web
+    name: streaming-gateway-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    region: oregon
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: streaming-gateway-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: streaming-gateway-redis
+          property: connectionString
+      - key: REDIS_CHANNEL
+        value: gateway:events
+      - key: HEARTBEAT_INTERVAL
+        value: "30"
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: DEBUG
+        value: "false"
+
+  # 2. Redis Pub/Sub Message Broker
+  - type: redis
+    name: streaming-gateway-redis
+    plan: free
+    region: oregon
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: [] # internal access only
+
+  # 3. React + Vite Frontend (Static Site)
+  - type: web
+    name: streaming-gateway-dashboard
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    rootDir: frontend
+    plan: free
+    region: oregon
+    envVars:
+      - key: VITE_BACKEND_WS_URL
+        fromService:
+          type: web
+          name: streaming-gateway-api
+          property: host
+
+databases:
+  # 4. PostgreSQL Managed Database
+  - name: streaming-gateway-db
+    plan: free
+    region: oregon
+    databaseName: streaming_gateway
+    user: postgres
